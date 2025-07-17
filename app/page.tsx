@@ -29,6 +29,7 @@ import {
   CloudDrizzle,
   Gauge,
 } from "lucide-react"
+import { sdk } from "@farcaster/miniapp-sdk"
 
 interface SavedLocation {
   id: string
@@ -58,6 +59,8 @@ export default function NatureWeatherApp() {
   const [isAddingLocation, setIsAddingLocation] = useState(false)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [farcasterUser, setFarcasterUser] = useState<any>(null)
+  const [donationStatus, setDonationStatus] = useState<string>("")
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     maxSteps: 5,
@@ -81,6 +84,38 @@ export default function NatureWeatherApp() {
   useEffect(() => {
     localStorage.setItem("weatherLocations", JSON.stringify(savedLocations))
   }, [savedLocations])
+
+  // Farcaster user detection
+  useEffect(() => {
+    (async () => {
+      try {
+        const user = await sdk.user.getCurrentUser()
+        setFarcasterUser(user)
+      } catch (e) {
+        setFarcasterUser(null)
+      }
+    })()
+  }, [])
+
+  // Add to Farcaster handler
+  const handleAddToFarcaster = () => {
+    sdk.actions.addToHomeScreen()
+  }
+
+  // USDC donation handler
+  const handleDonateUSDC = async () => {
+    setDonationStatus("Processing...")
+    try {
+      await sdk.wallet.sendToken({
+        to: "0xE09470dEFf0Be080Bd6591c124706b6D3419b44f",
+        amount: "1",
+        token: "USDC"
+      })
+      setDonationStatus("Thank you for your donation!")
+    } catch (e) {
+      setDonationStatus("Donation failed. Please try again.")
+    }
+  }
 
   const getWeatherGradient = (description: string, temp: number) => {
     const desc = description.toLowerCase()
@@ -256,6 +291,25 @@ export default function NatureWeatherApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 relative overflow-hidden">
+      {/* Farcaster Features */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 items-end">
+        {farcasterUser ? (
+          <div className="bg-white/80 rounded-xl px-4 py-2 shadow text-emerald-900 text-sm mb-2">
+            Connected as FID: {farcasterUser.fid}
+          </div>
+        ) : (
+          <div className="bg-white/80 rounded-xl px-4 py-2 shadow text-gray-500 text-sm mb-2">
+            Not connected to Farcaster
+          </div>
+        )}
+        <Button onClick={handleAddToFarcaster} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          Add to Farcaster
+        </Button>
+        <Button onClick={handleDonateUSDC} className="bg-yellow-500 hover:bg-yellow-600 text-white">
+          Donate 1 USDC
+        </Button>
+        {donationStatus && <div className="text-xs text-gray-700 mt-1">{donationStatus}</div>}
+      </div>
       {/* Subtle nature-inspired background pattern */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-10 left-10 w-32 h-32 bg-emerald-200 rounded-full blur-3xl"></div>

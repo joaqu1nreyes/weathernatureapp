@@ -1,0 +1,17 @@
+{
+  "name": "Nature Weather App",
+  "description": "Your personal weather dashboard with AI insights and nature context.",
+  "url": "https://weathernatureapp.vercel.app/",
+  "icon": "https://weathernatureapp.vercel.app/icon.png",
+  "version": "1.0.0",
+  "embed": {
+    "imageUrl": "https://weathernatureapp.vercel.app/icon.png",
+    "button": {
+      "title": "Open Weather App",
+      "action": {
+        "type": "navigate",
+        "url": "https://weathernatureapp.vercel.app/"
+      }
+    }
+  }
+} 

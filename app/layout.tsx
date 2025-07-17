@@ -1,9 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import "./globals.css" // <--- This line is crucial!
-
-const inter = Inter({ subsets: ["latin"] })
+import "./globals.css"
+import { useEffect } from "react"
 
 export const metadata: Metadata = {
   title: "Nature Weather App",
@@ -15,9 +14,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      import("@farcaster/miniapp-sdk").then(({ sdk }) => {
+        sdk.actions.ready()
+      })
+    }
+  }, [])
+
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={Inter({ subsets: ["latin"] }).className}>{children}</body>
     </html>
   )
 }
