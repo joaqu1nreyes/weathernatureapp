@@ -1,15 +1,9 @@
 "use client"
 
 import type React from "react"
-import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { useEffect } from "react"
-
-export const metadata: Metadata = {
-  title: "Nature Weather App",
-  description: "Your personal weather dashboard with AI insights and nature context.",
-}
 
 export default function RootLayout({
   children,
