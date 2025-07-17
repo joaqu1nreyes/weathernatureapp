@@ -28,7 +28,8 @@ const nextConfig = {
               object-src 'none';
               base-uri 'self';
               form-action 'self';
-              frame-ancestors 'none';
+              frame-ancestors https://farcaster.xyz https://warpcast.com https://client.farcaster.xyz https://client.warpcast.com;
+              connect-src 'self' https://farcaster.xyz https://client.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wrpcd.net https://*.wrpcd.net https://privy.farcaster.xyz https://privy.warpcast.com https://auth.privy.io https://*.rpc.privy.systems https://cloudflareinsights.com https://explorer-api.walletconnect.com;
               upgrade-insecure-requests;
             `
               .replace(/\s{2,}/g, " ")
