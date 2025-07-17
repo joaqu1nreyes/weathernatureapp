@@ -31,6 +31,17 @@ import {
 } from "lucide-react"
 import { sdk } from "@farcaster/miniapp-sdk"
 
+// Call sdk.actions.ready() in the main page component
+useEffect(() => {
+  async function readyFarcaster() {
+    if (typeof window !== "undefined") {
+      const { sdk } = await import("@farcaster/miniapp-sdk");
+      sdk.actions.ready();
+    }
+  }
+  readyFarcaster();
+}, []);
+
 interface SavedLocation {
   id: string
   name: string
