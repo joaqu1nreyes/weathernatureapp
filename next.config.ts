@@ -20,16 +20,16 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value: `
-              default-src 'self';
-              script-src 'self' 'unsafe-eval' 'unsafe-inline';
-              style-src 'self' 'unsafe-inline';
-              img-src 'self' blob: data:;
-              font-src 'self';
-              object-src 'none';
-              base-uri 'self';
-              form-action 'self';
-              frame-ancestors https://farcaster.xyz https://warpcast.com https://client.farcaster.xyz https://client.warpcast.com;
-              connect-src 'self' https://farcaster.xyz https://client.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wrpcd.net https://*.wrpcd.net https://privy.farcaster.xyz https://privy.warpcast.com https://auth.privy.io https://*.rpc.privy.systems https://cloudflareinsights.com https://explorer-api.walletconnect.com;
+              default-src * data: blob: 'unsafe-inline' 'unsafe-eval';
+              script-src * data: blob: 'unsafe-inline' 'unsafe-eval';
+              style-src * data: blob: 'unsafe-inline' 'unsafe-eval';
+              img-src * data: blob: 'unsafe-inline';
+              font-src * data: blob: 'unsafe-inline';
+              object-src *;
+              base-uri *;
+              form-action *;
+              frame-ancestors *;
+              connect-src * data: blob: 'unsafe-inline' 'unsafe-eval';
               upgrade-insecure-requests;
             `
               .replace(/\s{2,}/g, " ")
