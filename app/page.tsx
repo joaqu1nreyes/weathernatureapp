@@ -26,9 +26,31 @@ import {
   Gauge,
 } from "lucide-react";
 
+interface SavedLocation {
+  id: string;
+  name: string;
+  country: string;
+  weather: {
+    temperature: number;
+    feelsLike: number;
+    description: string;
+    humidity: number;
+    windSpeed: number;
+    pressure: number;
+  };
+  seasonalInfo: {
+    season: string;
+    plants: string[];
+    animals: string[];
+  };
+  lastUpdated: string;
+}
+
 export default function Page() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newLocation, setNewLocation] = useState("");
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,80 +60,132 @@ export default function Page() {
     }
   }, []);
 
-  // Static data for demonstration
-  const sampleLocations = [
-    {
-      id: "1",
-      name: "San Francisco",
-      country: "USA",
-      weather: {
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Load saved locations from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("weatherLocations");
+    if (saved) {
+      try {
+        setSavedLocations(JSON.parse(saved));
+      } catch (error) {
+        console.error("Error loading saved locations:", error);
+      }
+    }
+  }, []);
+
+  // Save locations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("weatherLocations", JSON.stringify(savedLocations));
+  }, [savedLocations]);
+
+  // Sample data for new locations
+  const getSampleWeatherData = (locationName: string) => {
+    const samples = {
+      "san francisco": {
         temperature: 68,
         feelsLike: 67,
         description: "Partly Cloudy",
         humidity: 60,
         windSpeed: 10,
         pressure: 1012,
+        seasonalInfo: {
+          season: "spring",
+          plants: ["Cherry Blossoms", "Tulips"],
+          animals: ["Robins", "Butterflies"],
+        },
       },
-      seasonalInfo: {
-        season: "spring",
-        plants: ["Cherry Blossoms", "Tulips"],
-        animals: ["Robins", "Butterflies"],
-      },
-      lastUpdated: new Date().toLocaleString(),
-    },
-    {
-      id: "2",
-      name: "New York",
-      country: "USA",
-      weather: {
+      "new york": {
         temperature: 72,
         feelsLike: 74,
         description: "Sunny",
         humidity: 45,
         windSpeed: 8,
         pressure: 1015,
+        seasonalInfo: {
+          season: "spring",
+          plants: ["Daffodils", "Magnolias"],
+          animals: ["Pigeons", "Sparrows"],
+        },
       },
-      seasonalInfo: {
-        season: "spring",
-        plants: ["Daffodils", "Magnolias"],
-        animals: ["Pigeons", "Sparrows"],
-      },
-      lastUpdated: new Date().toLocaleString(),
-    },
-    {
-      id: "3",
-      name: "London",
-      country: "UK",
-      weather: {
+      "london": {
         temperature: 55,
         feelsLike: 52,
         description: "Light Rain",
         humidity: 80,
         windSpeed: 15,
         pressure: 1008,
+        seasonalInfo: {
+          season: "spring",
+          plants: ["Bluebells", "Primroses"],
+          animals: ["Robins", "Blackbirds"],
+        },
       },
+    };
+
+    const key = locationName.toLowerCase();
+    return samples[key as keyof typeof samples] || {
+      temperature: 70,
+      feelsLike: 69,
+      description: "Clear",
+      humidity: 50,
+      windSpeed: 5,
+      pressure: 1013,
       seasonalInfo: {
         season: "spring",
-        plants: ["Bluebells", "Primroses"],
-        animals: ["Robins", "Blackbirds"],
+        plants: ["Wildflowers", "Grass"],
+        animals: ["Birds", "Insects"],
       },
-      lastUpdated: new Date().toLocaleString(),
-    },
-  ];
+    };
+  };
 
   const handleAddLocation = () => {
-    // For now, just clear the input
+    if (!newLocation.trim()) return;
+
+    const weatherData = getSampleWeatherData(newLocation);
+    const newSavedLocation: SavedLocation = {
+      id: Date.now().toString(),
+      name: newLocation.split(",")[0].trim(),
+      country: newLocation.split(",")[1]?.trim() || "Unknown",
+      weather: weatherData,
+      seasonalInfo: weatherData.seasonalInfo,
+      lastUpdated: new Date().toLocaleString(),
+    };
+
+    setSavedLocations((prev) => [...prev, newSavedLocation]);
     setNewLocation("");
-    console.log("Would add location:", newLocation);
   };
 
   const handleRemoveLocation = (id: string) => {
-    console.log("Would remove location:", id);
+    setSavedLocations((prev) => prev.filter((loc) => loc.id !== id));
   };
 
   const handleRefreshLocation = (id: string) => {
-    console.log("Would refresh location:", id);
+    setSavedLocations((prev) =>
+      prev.map((loc) =>
+        loc.id === id
+          ? {
+              ...loc,
+              lastUpdated: new Date().toLocaleString(),
+            }
+          : loc
+      )
+    );
   };
+
+  const getTimeOfDayGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 6) return { text: "Good Night", icon: <Moon className="h-5 w-5" /> };
+    if (hour < 12) return { text: "Good Morning", icon: <Sunrise className="h-5 w-5" /> };
+    if (hour < 18) return { text: "Good Afternoon", icon: <Sun className="h-5 w-5" /> };
+    return { text: "Good Evening", icon: <Sunset className="h-5 w-5" /> };
+  };
+
+  const greeting = getTimeOfDayGreeting();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 relative overflow-hidden">
@@ -134,14 +208,18 @@ export default function Page() {
               <div>
                 <h1 className="text-3xl font-light text-gray-900 tracking-tight">Weather</h1>
                 <div className="flex items-center gap-2 text-emerald-600 font-medium text-sm">
-                  <Sunrise className="h-5 w-5" />
-                  <span>Good Morning</span>
+                  {greeting.icon}
+                  <span>{greeting.text}</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-light text-gray-900">08:00</div>
-              <div className="text-sm text-gray-600 font-light">Monday, Apr 8</div>
+              <div className="text-2xl font-light text-gray-900">
+                {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </div>
+              <div className="text-sm text-gray-600 font-light">
+                {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+              </div>
             </div>
           </div>
         </header>
@@ -165,7 +243,7 @@ export default function Page() {
                 <div className="relative flex-1">
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-emerald-500" />
                   <Input
-                    placeholder="Search for a city"
+                    placeholder="Search for a city (e.g., San Francisco, New York, London)"
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleAddLocation()}
@@ -183,113 +261,127 @@ export default function Page() {
 
             {/* Weather Cards - Apple Weather Style */}
             <div className="space-y-4">
-              {sampleLocations.map((location, index) => (
-                <Card key={location.id} className={`border-0 rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 ${index === 0 ? "h-80" : "h-64"}`}>
-                  <CardContent className="p-0 h-full">
-                    <div className="p-6 h-full flex flex-col">
-                      {/* Header with location and remove button */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-2xl font-light text-white mb-1">{location.name}</h3>
-                          <p className="text-white/80 text-sm font-light">{location.country}</p>
+              {savedLocations.length === 0 ? (
+                <div className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg rounded-3xl p-12 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <TreePine className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-light text-gray-700 mb-3">Welcome to Nature Weather</h3>
+                  <p className="text-gray-500 font-light text-lg">
+                    Add your first location to discover weather patterns and seasonal nature insights
+                  </p>
+                </div>
+              ) : (
+                savedLocations.map((location, index) => (
+                  <Card key={location.id} className={`border-0 rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 ${index === 0 ? "h-80" : "h-64"}`}>
+                    <CardContent className="p-0 h-full">
+                      <div className="p-6 h-full flex flex-col">
+                        {/* Header with location and remove button */}
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-2xl font-light text-white mb-1">{location.name}</h3>
+                            <p className="text-white/80 text-sm font-light">{location.country}</p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleRemoveLocation(location.id)}
+                            className="text-white/60 hover:text-white hover:bg-white/20 rounded-full h-8 w-8 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleRemoveLocation(location.id)}
-                          className="text-white/60 hover:text-white hover:bg-white/20 rounded-full h-8 w-8 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
 
-                      {/* Main Temperature Display */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <div className="text-7xl font-ultralight text-white mb-2 leading-none">{location.weather.temperature}°</div>
-                          <div className="text-white/90 text-xl font-light capitalize">{location.weather.description}</div>
-                          <div className="text-white/70 text-sm font-light mt-1">Feels like {location.weather.feelsLike}°</div>
+                        {/* Main Temperature Display */}
+                        <div className="flex items-center justify-between mb-6">
+                          <div>
+                            <div className="text-7xl font-ultralight text-white mb-2 leading-none">{location.weather.temperature}°</div>
+                            <div className="text-white/90 text-xl font-light capitalize">{location.weather.description}</div>
+                            <div className="text-white/70 text-sm font-light mt-1">Feels like {location.weather.feelsLike}°</div>
+                          </div>
+                          <div className="text-right">
+                            <Cloud className={`${index === 0 ? "h-20 w-20" : "h-16 w-16"} text-white drop-shadow-lg`} />
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <Cloud className={`${index === 0 ? "h-20 w-20" : "h-16 w-16"} text-white drop-shadow-lg`} />
-                        </div>
-                      </div>
 
-                      {/* Weather Details Grid - only show for first card */}
-                      {index === 0 && (
-                        <div className="grid grid-cols-4 gap-3 mb-6">
-                          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <Droplets className="h-4 w-4 text-white/80 mx-auto mb-1" />
-                            <div className="text-white text-sm font-light">{location.weather.humidity}%</div>
-                            <div className="text-white/60 text-xs">Humidity</div>
-                          </div>
-                          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <Wind className="h-4 w-4 text-white/80 mx-auto mb-1" />
-                            <div className="text-white text-sm font-light">{location.weather.windSpeed}</div>
-                            <div className="text-white/60 text-xs">mph</div>
-                          </div>
-                          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <Gauge className="h-4 w-4 text-white/80 mx-auto mb-1" />
-                            <div className="text-white text-sm font-light">{location.weather.pressure}</div>
-                            <div className="text-white/60 text-xs">hPa</div>
-                          </div>
-                          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <Eye className="h-4 w-4 text-white/80 mx-auto mb-1" />
-                            <div className="text-white text-sm font-light">10</div>
-                            <div className="text-white/60 text-xs">km</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Nature Section */}
-                      <div className="mt-auto">
-                        <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Leaf className="h-4 w-4 text-white/90" />
-                            <span className="text-white/90 font-medium text-sm capitalize">{location.seasonalInfo.season} Nature</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Flower className="h-3 w-3 text-white/80" />
-                                <span className="text-white/80 text-xs">Blooming</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {location.seasonalInfo.plants.map((plant) => (
-                                  <Badge key={plant} className="bg-white/20 text-white border-0 rounded-full text-xs font-light hover:bg-white/30 transition-colors px-2 py-0">{plant}</Badge>
-                                ))}
-                              </div>
+                        {/* Weather Details Grid - only show for first card */}
+                        {index === 0 && (
+                          <div className="grid grid-cols-4 gap-3 mb-6">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
+                              <Droplets className="h-4 w-4 text-white/80 mx-auto mb-1" />
+                              <div className="text-white text-sm font-light">{location.weather.humidity}%</div>
+                              <div className="text-white/60 text-xs">Humidity</div>
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Bird className="h-3 w-3 text-white/80" />
-                                <span className="text-white/80 text-xs">Wildlife</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {location.seasonalInfo.animals.map((animal) => (
-                                  <Badge key={animal} className="bg-white/20 text-white border-0 rounded-full text-xs font-light hover:bg-white/30 transition-colors px-2 py-0">{animal}</Badge>
-                                ))}
-                              </div>
+                            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
+                              <Wind className="h-4 w-4 text-white/80 mx-auto mb-1" />
+                              <div className="text-white text-sm font-light">{location.weather.windSpeed}</div>
+                              <div className="text-white/60 text-xs">mph</div>
+                            </div>
+                            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
+                              <Gauge className="h-4 w-4 text-white/80 mx-auto mb-1" />
+                              <div className="text-white text-sm font-light">{location.weather.pressure}</div>
+                              <div className="text-white/60 text-xs">hPa</div>
+                            </div>
+                            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3 text-center">
+                              <Eye className="h-4 w-4 text-white/80 mx-auto mb-1" />
+                              <div className="text-white text-sm font-light">10</div>
+                              <div className="text-white/60 text-xs">km</div>
                             </div>
                           </div>
-                          {/* Last updated */}
-                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/20">
-                            <span className="text-white/60 text-xs">Updated 08:00</span>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleRefreshLocation(location.id)}
-                              className="text-white/80 hover:text-white hover:bg-white/20 text-xs rounded-full px-3 py-1 h-auto"
-                            >
-                              Refresh
-                            </Button>
+                        )}
+
+                        {/* Nature Section */}
+                        <div className="mt-auto">
+                          <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Leaf className="h-4 w-4 text-white/90" />
+                              <span className="text-white/90 font-medium text-sm capitalize">{location.seasonalInfo.season} Nature</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Flower className="h-3 w-3 text-white/80" />
+                                  <span className="text-white/80 text-xs">Blooming</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {location.seasonalInfo.plants.map((plant) => (
+                                    <Badge key={plant} className="bg-white/20 text-white border-0 rounded-full text-xs font-light hover:bg-white/30 transition-colors px-2 py-0">{plant}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Bird className="h-3 w-3 text-white/80" />
+                                  <span className="text-white/80 text-xs">Wildlife</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {location.seasonalInfo.animals.map((animal) => (
+                                    <Badge key={animal} className="bg-white/20 text-white border-0 rounded-full text-xs font-light hover:bg-white/30 transition-colors px-2 py-0">{animal}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            {/* Last updated */}
+                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/20">
+                              <span className="text-white/60 text-xs">
+                                Updated {new Date(location.lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleRefreshLocation(location.id)}
+                                className="text-white/80 hover:text-white hover:bg-white/20 text-xs rounded-full px-3 py-1 h-auto"
+                              >
+                                Refresh
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
 
