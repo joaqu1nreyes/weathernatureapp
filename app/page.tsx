@@ -1,5 +1,8 @@
-"use client"
+"use client";
+import { useEffect } from "react";
 
+// --- BEGIN: Original code commented out for debugging ---
+/*
 import { useState, useEffect } from "react"
 import { useChat } from "ai/react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -636,5 +639,14 @@ export default function NatureWeatherApp() {
       </div>
     </div>
   )
+}
+*/
+// --- END: Original code commented out for debugging ---
+
+export default function Page() {
+  useEffect(() => {
+    console.log("Hello from useEffect");
+  }, []);
+  return <div>Hello from Farcaster Mini App!</div>;
 }
 
