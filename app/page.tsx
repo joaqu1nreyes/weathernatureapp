@@ -51,6 +51,8 @@ export default function Page() {
   const [newLocation, setNewLocation] = useState("");
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [farcasterUser, setFarcasterUser] = useState<any>(null);
+  const [donationStatus, setDonationStatus] = useState<string>("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -58,6 +60,21 @@ export default function Page() {
         sdk.actions.ready();
       });
     }
+  }, []);
+
+  // Farcaster user detection
+  useEffect(() => {
+    (async () => {
+      try {
+        const { sdk } = await import("@farcaster/miniapp-sdk");
+        // Try to get user info - this may not be available in all contexts
+        const user = await (sdk as any).user?.getCurrentUser?.();
+        setFarcasterUser(user);
+      } catch (e) {
+        console.log("Not connected to Farcaster or user not found");
+        setFarcasterUser(null);
+      }
+    })();
   }, []);
 
   // Update time every minute
@@ -82,6 +99,33 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem("weatherLocations", JSON.stringify(savedLocations));
   }, [savedLocations]);
+
+  // Add to Farcaster handler
+  const handleAddToFarcaster = async () => {
+    try {
+      const { sdk } = await import("@farcaster/miniapp-sdk");
+      await (sdk as any).actions?.addToHomeScreen?.();
+    } catch (e) {
+      console.error("Failed to add to Farcaster:", e);
+    }
+  };
+
+  // USDC donation handler
+  const handleDonateUSDC = async () => {
+    setDonationStatus("Processing...");
+    try {
+      const { sdk } = await import("@farcaster/miniapp-sdk");
+      await (sdk as any).wallet?.sendToken?.({
+        to: "0xE09470dEFf0Be080Bd6591c124706b6D3419b44f",
+        amount: "1",
+        token: "USDC"
+      });
+      setDonationStatus("Thank you for your donation!");
+    } catch (e) {
+      console.error("Donation failed:", e);
+      setDonationStatus("Donation failed. Please try again.");
+    }
+  };
 
   // Sample data for new locations
   const getSampleWeatherData = (locationName: string) => {
@@ -189,6 +233,36 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 relative overflow-hidden">
+      {/* Farcaster Features */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 items-end">
+        {farcasterUser ? (
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg text-emerald-900 text-sm mb-2 border border-white/20">
+            Connected as FID: {farcasterUser.fid}
+          </div>
+        ) : (
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg text-gray-500 text-sm mb-2 border border-white/20">
+            Not connected to Farcaster
+          </div>
+        )}
+        <Button 
+          onClick={handleAddToFarcaster} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg border-0"
+        >
+          Add to Farcaster
+        </Button>
+        <Button 
+          onClick={handleDonateUSDC} 
+          className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg border-0"
+        >
+          Donate 1 USDC
+        </Button>
+        {donationStatus && (
+          <div className="text-xs text-gray-700 mt-1 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-white/20">
+            {donationStatus}
+          </div>
+        )}
+      </div>
+
       {/* Subtle nature-inspired background pattern */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-10 left-10 w-32 h-32 bg-emerald-200 rounded-full blur-3xl"></div>
