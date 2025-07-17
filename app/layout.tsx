@@ -14,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("@farcaster/miniapp-sdk").then(({ sdk }) => {
-        sdk.actions.ready()
-      })
+    async function readyFarcaster() {
+      if (typeof window !== "undefined") {
+        const { sdk } = await import("@farcaster/miniapp-sdk");
+        sdk.actions.ready();
+      }
     }
+    readyFarcaster();
   }, [])
 
   return (
